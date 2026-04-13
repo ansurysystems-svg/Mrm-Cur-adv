@@ -1,100 +1,50 @@
-# 🚀 Complete Deployment Guide - Zoho CRM Integration
-
-# Deployment Guide — Netlify (recommended)
+# Deployment Guide — Cloudflare Pages (recommended)
 
 This repository is a static multi-page site (HTML/CSS/vanilla JS). It uses CDN-hosted Tailwind, AOS, and Font Awesome, and the contact form posts directly to Formspree. There is no build required, but a harmless `npm run build` script exists that echoes "No build step required".
 
-This guide shows two common ways to deploy to Netlify:
-- using the Netlify web UI (recommended for quick setup)
-- using the Netlify CLI (useful for local preview, CI, or scripting)
+This guide shows how to deploy the site to Cloudflare Pages, with local preview options.
 
 Important repo files referenced:
-- `netlify.toml` — repo already contains Netlify settings (publish = ".", functions = "netlify/functions", node_bundler = "esbuild").
-- `netlify/functions/zoho-submit.js` — historical stub (returns 410). Contact form currently posts to Formspree (`contact.html`).
 - `contact.html` — the contact form action posts to Formspree by default: `https://formspree.io/f/manlrprn`.
 - `package.json` — contains a safe `build` script: `echo 'No build step required'`.
+- `netlify.toml` — legacy Netlify settings; not required for Cloudflare Pages.
 
-1) Deploy via Netlify Web UI
+1) Deploy via Cloudflare Pages Web UI
 --------------------------------
-1. Push your latest code to your GitHub (or GitLab/Bitbucket) repository.
-2. Go to https://app.netlify.com and sign in (or sign up) and click "New site from Git".
-3. Choose the Git provider and select this repository.
-4. In the Build settings set:
-	 - Build command: `npm run build` (or leave blank). Using `npm run build` is safe here because the script only echoes a message.
-	 - Publish directory: `.`
-5. (Optional) In the Netlify UI under "Functions settings" set the functions directory to `netlify/functions` (this is already configured via `netlify.toml`).
-6. Deploy. Netlify will build (run the echo build) and publish the repository root.
+1. Push your latest code to your GitHub repository.
+2. Go to https://pages.cloudflare.com and sign in (or sign up).
+3. Click "Create a project" and connect your GitHub repository.
+4. Configure the project settings:
+	- Framework preset: `None` (or leave blank)
+	- Build command: leave blank, or use `npm run build` if the UI requires one. This is safe because the script only echoes a message.
+	- Build output directory: `.`
+5. Save the settings and deploy.
 
-Notes / gotchas for the UI flow
-- The site uses a redirect in `netlify.toml` to route all paths to `/index.html`. This is useful for SPA-like deep links but be aware when adding server-side routes.
-- `zoho-submit.js` is a stub that returns HTTP 410. The contact form uses Formspree — do not expect `zoho-submit.js` to be invoked unless you deliberately change the form to point at a Netlify function.
+Notes / gotchas for Cloudflare Pages
+- This is a static site, so the deploy only needs the repository root and no build step.
+- Cloudflare Pages ignores `netlify.toml`; that file can remain in the repo but does not affect Pages.
+- The contact form is still handled by Formspree, so no serverless function configuration is required.
+- If the UI complains about a build command, use `npm run build`.
 
-2) Deploy via Netlify CLI (local preview & production deploys)
+2) Local preview with Cloudflare Pages CLI (optional)
 --------------------------------
-Prerequisites: Node.js + npm installed.
+If you want a local Cloudflare Pages-like preview, install Wrangler and run the Pages dev server.
 
-Install the Netlify CLI (PowerShell):
+Install Wrangler:
 
 ```powershell
-npm install -g netlify-cli
+npm install -g @cloudflare/wrangler
 ```
 
-Login and link or create a site:
+Run local preview:
 
 ```powershell
-# login to Netlify (opens browser)
-netlify login
-
-# in your repo folder, you can create & link a new site (interactive)
-cd 'c:\Users\Ayoub ansari\OneDrive\Documents\mrmfinal cursor'
-netlify init
+wrangler pages dev . --port 8080
 ```
 
-Quick deploy (draft preview):
-
-```powershell
-# Deploy the current folder as a draft deploy (not production)
-netlify deploy --dir=. 
-```
-
-Deploy to production:
-
-```powershell
-# Deploy the current folder to production (after linking the site)
-netlify deploy --prod --dir=.
-```
-
-3) Functions & environment variables
+3) Local preview without Cloudflare CLI
 --------------------------------
-- The repository is configured to use `esbuild` for bundling functions (see `netlify.toml`). When adding serverless functions place them in `netlify/functions/` and follow the Netlify function shape (`exports.handler = async (event) => { ... }`).
-- If you reintroduce server-side CRM relay functions you must add credentials in the Netlify UI under Site settings → Build & deploy → Environment → Environment variables. Do not hard-code secrets in the repo.
-
-4) Replacing Formspree with a Netlify function (optional)
---------------------------------
-If you prefer to handle form submissions via a Netlify function instead of Formspree, update `contact.html` to submit (or fetch) to your function endpoint (for example `/api/submit` or `/.netlify/functions/submit`). Example client-side fetch (simplified):
-
-```javascript
-// inside js/main.js's initializeContactForm or a small inline script
-const form = document.getElementById('contactForm');
-form.addEventListener('submit', async (e) => {
-	e.preventDefault();
-	const data = new FormData(form);
-	const payload = Object.fromEntries(data.entries());
-
-	const res = await fetch('/.netlify/functions/submit', {
-		method: 'POST',
-		body: JSON.stringify(payload),
-		headers: { 'Content-Type': 'application/json' }
-	});
-	// handle response / redirect
-});
-```
-
-Then implement `netlify/functions/submit.js` (remember to read/write secrets via Netlify environment vars).
-
-5) Local preview without Netlify CLI
---------------------------------
-Because this is a static site with CDN assets, you can preview locally with a simple static server. Example (PowerShell):
+Because this is a static site with CDN assets, you can preview locally with a simple static server.
 
 ```powershell
 # Python simple server
@@ -104,23 +54,25 @@ python -m http.server 8080
 npx http-server . -p 8080 -c-1
 ```
 
-6) Troubleshooting
+4) Optional: contact form and server-side changes
 --------------------------------
-- If functions aren't building, confirm `netlify.toml` includes `functions = "netlify/functions"` and Netlify UI functions directory matches.
-- If deep links return index content unexpectedly, check the `[[redirects]]` section in `netlify.toml` (the repo currently has `/* -> /index.html`).
-- If contact submissions fail, verify `contact.html` form `action` is correct (Formspree or function endpoint) and that CORS/redirect behavior is handled by your function or the Formspree settings.
+- Right now, contact submissions are sent directly to Formspree from `contact.html`.
+- If you later want to replace Formspree with a server-side handler, Cloudflare Pages supports Cloudflare Workers and Pages Functions, but that requires a different setup than the old Netlify function flow.
+- Do not hard-code any secrets in the repo; use Cloudflare environment variables if you add server-side logic.
 
-7) Quick checklist before deploying
+5) Troubleshooting
+--------------------------------
+- If the site does not deploy, verify the build output directory is set to `.` and the repository root is selected.
+- If contact submissions fail, confirm `contact.html` still points to the correct Formspree endpoint.
+- If you see unexpected redirects, Cloudflare Pages will serve the static files directly from the repo; there is no `netlify.toml` redirect behavior on Pages.
+
+6) Quick checklist before deploying
 --------------------------------
 - Commit and push all changes to the repo.
-- Confirm `contact.html` form target is what you expect (Formspree vs Netlify function).
+- Confirm `contact.html` form target is set to `https://formspree.io/f/manlrprn`.
 - Confirm `assets/` includes the required images and `assets/mrm-logo.png` exists.
-- Verify `netlify.toml` is correct (publish = ".", functions path as desired).
+- Verify that Cloudflare Pages is configured to deploy from the repository root with no build or `npm run build`.
 
 If you want, I can also:
-- Scaffold a minimal `netlify/functions/submit.js` example and update `contact.html` to use it (I will not commit any secrets — I'll read them from Netlify environment variables).
-- Walk through connecting a GitHub repo to Netlify step-by-step with screenshots (or sample UI choices).
-
----
-
-If you'd like me to scaffold the Netlify function + client fetch and run a local `netlify dev` preview, tell me which option you prefer (keep Formspree, or replace with a function). I can implement the function and a tiny test harness next.
+- Update this guide with a short Cloudflare Pages section in `README.md`.
+- Help you connect the GitHub repo to Cloudflare Pages step-by-step.
