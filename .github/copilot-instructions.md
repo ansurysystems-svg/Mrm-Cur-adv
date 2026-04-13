@@ -1,33 +1,33 @@
-﻿## Repo snapshot (short)
+﻿# Project Guidelines
 
-- Small static multi-page site (HTML/CSS/vanilla JS) for a law firm. Key pages: `index.html`, `aboutus.html`, `services.html`, `contact.html`.
-- Styles: `css/` (global + per-page). Client logic: `js/main.js` (single large initializer file). Assets: `assets/`.
+## Architecture
+Static multi-page website (HTML/CSS/vanilla JS) for a law firm. Key pages: `index.html`, `aboutus.html`, `services.html`, `contact.html`, `booking.html`, `thank-you.html`.
 
-## Quick start (what an agent needs immediately)
+- Styles in `css/` (global `style.css` + page-specific files). Client logic centralized in `js/main.js` (initializer hub).
+- Calendly integration for booking on `booking.html`.
+- Assets in `assets/`.
 
-- No build step: `package.json` contains a no-op build script. Edit files directly and preview with a static server: e.g. `python -m http.server 8080` or `npx http-server . -p 8080 -c-1`.
-- Netlify: `netlify.toml` publishes root, functions in `netlify/functions`, bundler `esbuild`. `netlify dev` is useful for testing functions + redirects.
+See [README.md](README.md) for feature overview and project structure.
 
-## Key patterns & where to change things
+## Build and Test
+No build step required. Edit files directly.
 
-- `js/main.js` exposes initializer helpers (search for `initializeContactForm`, `initializeTestimonials`, `initializeServicesNav`). Modify behavior there.
-- CSS: global rules in `css/style.css`; page-specific files (e.g. `css/home.css`). Tailwind via CDN  do not assume a local build.
-- Forms: `contact.html` posts to Formspree by default. `netlify/functions/zoho-submit.js` is a stub returning 410; do not rely on it.
+- Local preview: `python -m http.server 8080` or `npx http-server . -p 8080 -c-1`
+- With functions: `netlify dev`
+- Deploy: Push to git (Netlify auto-deploys from main branch)
 
-## Conventions & non-obvious rules
+See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for Netlify setup and function integration.
 
-- Keep changes minimal and localized. Avoid adding a build pipeline unless requested.
-- New serverless functions go in `netlify/functions/` and must follow `exports.handler = async (event) => { ... }` for Netlify + be bundleable by `esbuild`.
-- Deep links are served to `index.html` because of the global redirect in `netlify.toml` (`/* -> /index.html`).
+## Conventions
+- `js/main.js` exposes initializer functions (e.g., `initializeContactForm`, `initializeTestimonials`). Modify behavior there.
+- CSS: Global rules in `css/style.css`; page-specific files (e.g., `css/home.css`). Tailwind via CDN—no local build.
+- Forms: `contact.html` posts to Formspree. `netlify/functions/zoho-submit.js` is deprecated (returns 410).
+- New functions: `netlify/functions/` with `exports.handler = async (event) => { ... }`, bundleable by esbuild.
+- Deep links redirect to `index.html` via `netlify.toml`.
 
-## Concrete examples
+Keep changes minimal and localized. Avoid adding build pipeline unless requested.
 
-- Change phone: edit `index.html` and `contact.html` for `tel:+254702929018`.
-- Change contact form target: edit the `<form action="...">` in `contact.html` or replace with a client-side `fetch` to `/.netlify/functions/<fn>`.
-
-## For AI agents making edits
-
-- Always reference exact files and lines in PRs. Prefer minimal patches and explain how new code integrates with `js/main.js`.
-- When adding functions, include a minimal test event and document any required environment variables at the top of the function.
-
-If you want a checklist for first-time local development or a short mapping of `js/main.js` helper names to page behavior, tell me which form/feature to map and I will add it.
+## For AI Agents
+- Reference exact files and lines in changes.
+- Prefer minimal patches; explain integration with `js/main.js`.
+- For new functions, include test event and document required environment variables.
